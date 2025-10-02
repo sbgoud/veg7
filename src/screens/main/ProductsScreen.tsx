@@ -14,7 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
-type ProductsScreenNavigationProp = StackNavigationProp<any, 'ProductDetail'>;
+type ProductsScreenNavigationProp = any;
 
 interface Product {
   id: string;

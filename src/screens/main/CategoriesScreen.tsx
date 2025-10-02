@@ -12,7 +12,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
-type CategoriesScreenNavigationProp = StackNavigationProp<any, 'Categories'>;
+type CategoriesScreenNavigationProp = any;
 
 interface Category {
   id: string;

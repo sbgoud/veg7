@@ -29,7 +29,7 @@ interface CartItem {
   };
 }
 
-type CartScreenNavigationProp = StackNavigationProp<any, 'Cart'>;
+type CartScreenNavigationProp = any;
 
 interface CartItem {
   id: string;

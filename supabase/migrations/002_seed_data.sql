@@ -11,8 +11,8 @@ INSERT INTO categories (id, name, description, image_url, sort_order, is_active)
 ('550e8400-e29b-41d4-a716-446655440007', 'Herbs', 'Fresh aromatic herbs', 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400', 7, true),
 ('550e8400-e29b-41d4-a716-446655440008', 'Exotic Vegetables', 'Specialty and exotic vegetables', 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400', 8, true);
 
--- Insert sample products (100+ products across all categories)
-INSERT INTO products (id, name, description, price, weight, unit, image_url, category_id, stock_quantity, is_organic, is_seasonal, is_active) VALUES
+-- Insert sample products (100+ products across all categories and stores)
+INSERT INTO products (id, name, description, price, weight, unit, image_url, category_id, store_id, stock_quantity, is_organic, is_seasonal, is_active) VALUES
 
 -- Leafy Vegetables (20 products)
 ('550e8400-e29b-41d4-a716-446655440010', 'Fresh Spinach', 'Organic baby spinach leaves, perfect for salads and cooking', 45.00, 250, 'g', 'https://images.unsplash.com/photo-1576045052776-4697c9b0c726?w=400', '550e8400-e29b-41d4-a716-446655440001', 50, true, true, true),
@@ -37,9 +37,9 @@ INSERT INTO products (id, name, description, price, weight, unit, image_url, cat
 ('550e8400-e29b-41d4-a716-446655440044', 'Turnip Greens', 'Fresh turnip leaves', 35.00, 200, 'g', 'https://images.unsplash.com/photo-1576045052776-4697c9b0c726?w=400', '550e8400-e29b-41d4-a716-446655440001', 25, false, true, true),
 
 -- Root Vegetables (20 products)
-('550e8400-e29b-41d4-a716-446655440013', 'Fresh Carrots', 'Crisp orange carrots, rich in beta-carotene', 40.00, 500, 'g', 'https://images.unsplash.com/photo-1582515073490-39981397c445?w=400', '550e8400-e29b-41d4-a716-446655440002', 75, false, true, true),
-('550e8400-e29b-41d4-a716-446655440014', 'Red Radish', 'Fresh red radishes with leaves', 30.00, 250, 'g', 'https://images.unsplash.com/photo-1576045052776-4697c9b0c726?w=400', '550e8400-e29b-41d4-a716-446655440002', 40, false, true, true),
-('550e8400-e29b-41d4-a716-446655440015', 'Beetroot', 'Fresh red beetroots with leaves', 55.00, 500, 'g', 'https://images.unsplash.com/photo-1557844352-761f2565b576?w=400', '550e8400-e29b-41d4-a716-446655440002', 25, false, true, true),
+('550e8400-e29b-41d4-a716-446655440013', 'Fresh Carrots', 'Crisp orange carrots, rich in beta-carotene', 40.00, 500, 'g', 'https://images.unsplash.com/photo-1582515073490-39981397c445?w=400', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440300', 75, false, true, true),
+('550e8400-e29b-41d4-a716-446655440014', 'Red Radish', 'Fresh red radishes with leaves', 30.00, 250, 'g', 'https://images.unsplash.com/photo-1576045052776-4697c9b0c726?w=400', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440301', 40, false, true, true),
+('550e8400-e29b-41d4-a716-446655440015', 'Beetroot', 'Fresh red beetroots with leaves', 55.00, 500, 'g', 'https://images.unsplash.com/photo-1557844352-761f2565b576?w=400', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440302', 25, false, true, true),
 ('550e8400-e29b-41d4-a716-446655440045', 'Potatoes', 'Fresh potatoes, perfect for cooking', 25.00, 1000, 'g', 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=400', '550e8400-e29b-41d4-a716-446655440002', 100, false, true, true),
 ('550e8400-e29b-41d4-a716-446655440046', 'Sweet Potatoes', 'Orange sweet potatoes, rich and nutritious', 50.00, 500, 'g', 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=400', '550e8400-e29b-41d4-a716-446655440002', 40, false, true, true),
 ('550e8400-e29b-41d4-a716-446655440047', 'White Radish', 'Fresh white radish (daikon)', 35.00, 500, 'g', 'https://images.unsplash.com/photo-1576045052776-4697c9b0c726?w=400', '550e8400-e29b-41d4-a716-446655440002', 30, false, true, true),
@@ -110,14 +110,29 @@ INSERT INTO products (id, name, description, price, weight, unit, image_url, cat
 ('550e8400-e29b-41d4-a716-446655440109', 'Thai Basil', 'Asian basil variety', 45.00, 100, 'g', 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400', '550e8400-e29b-41d4-a716-446655440007', 18, false, true, true),
 ('550e8400-e29b-41d4-a716-446655440110', 'Lemon Balm', 'Citrus-scented herb', 55.00, 80, 'g', 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400', '550e8400-e29b-41d4-a716-446655440007', 12, false, true, true);
 
+-- Insert sample stores (Hyderabad locations with real coordinates)
+INSERT INTO stores (id, name, address, city, state, pincode, latitude, longitude, phone, email, is_active) VALUES
+('550e8400-e29b-41d4-a716-446655440300', 'veg7 Hi-Tech City', 'Hi-Tech City, Near Cyber Towers', 'Hyderabad', 'Telangana', '500081', 17.4504, 78.3900, '+91-40-41512456', 'hitech@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440301', 'veg7 Banjara Hills', 'Banjara Hills, Road No. 12', 'Hyderabad', 'Telangana', '500034', 17.4145, 78.4422, '+91-40-41512457', 'banjara@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440302', 'veg7 Jubilee Hills', 'Jubilee Hills, Near Apollo Hospital', 'Hyderabad', 'Telangana', '500033', 17.4299, 78.4088, '+91-40-41512458', 'jubilee@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440303', 'veg7 Gachibowli', 'Gachibowli, Near Financial District', 'Hyderabad', 'Telangana', '500032', 17.4401, 78.3489, '+91-40-41512459', 'gachibowli@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440304', 'veg7 Madhapur', 'Madhapur, Near Inorbit Mall', 'Hyderabad', 'Telangana', '500081', 17.4483, 78.3908, '+91-40-41512460', 'madhapur@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440305', 'veg7 Kondapur', 'Kondapur, Near Kothaguda Junction', 'Hyderabad', 'Telangana', '500084', 17.4652, 78.3637, '+91-40-41512461', 'kondapur@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440306', 'veg7 Ameerpet', 'Ameerpet, Near Maitrivanam', 'Hyderabad', 'Telangana', '500016', 17.4375, 78.4482, '+91-40-41512462', 'ameerpet@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440307', 'veg7 Begumpet', 'Begumpet, Near Hyderabad Public School', 'Hyderabad', 'Telangana', '500016', 17.4474, 78.4658, '+91-40-41512463', 'begumpet@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440308', 'veg7 Secunderabad', 'Secunderabad, Near Clock Tower', 'Secunderabad', 'Telangana', '500003', 17.4399, 78.4987, '+91-40-41512464', 'secunderabad@veg7.com', true),
+('550e8400-e29b-41d4-a716-446655440309', 'veg7 Kukatpally', 'Kukatpally, Near Metro Station', 'Hyderabad', 'Telangana', '500072', 17.4943, 78.3997, '+91-40-41512465', 'kukatpally@veg7.com', true);
+
 -- Insert sample users (including admin and rider accounts)
 INSERT INTO users (id, email, password_hash, full_name, phone, role, is_active) VALUES
 -- Regular users
-('550e8400-e29b-41d4-a716-446655440100', 'user1@example.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Doe', '+1234567890', 'user', true),
-('550e8400-e29b-41d4-a716-446655440101', 'user2@example.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane Smith', '+1234567891', 'user', true),
+('550e8400-e29b-41d4-a716-446655440100', 'user1@example.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Doe', '+919876543210', 'user', true),
+('550e8400-e29b-41d4-a716-446655440101', 'user2@example.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane Smith', '+919876543211', 'user', true),
 
--- Admin user
-('550e8400-e29b-41d4-a716-446655440102', 'admin@veg7.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin User', '+1234567892', 'admin', true),
+-- Admin users (one for each store)
+('550e8400-e29b-41d4-a716-446655440102', 'admin.cp@veg7.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'CP Store Manager', '+1234567892', 'admin', true),
+('550e8400-e29b-41d4-a716-446655440105', 'admin.kb@veg7.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'KB Store Manager', '+1234567895', 'admin', true),
+('550e8400-e29b-41d4-a716-446655440106', 'admin.ln@veg7.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'LN Store Manager', '+1234567896', 'admin', true),
 
 -- Rider users
 ('550e8400-e29b-41d4-a716-446655440103', 'rider1@veg7.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Rider One', '+1234567893', 'rider', true),
@@ -129,14 +144,14 @@ INSERT INTO admins (id, user_id, permissions, department, employee_id) VALUES
 
 -- Insert rider profiles
 INSERT INTO riders (id, user_id, vehicle_type, vehicle_number, license_number, current_latitude, current_longitude, is_available, is_online, rating, total_deliveries, joining_date) VALUES
-('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440103', 'motorcycle', 'DL01AB1234', 'DL0120230001234', 28.6139, 77.2090, true, false, 4.5, 150, NOW() - INTERVAL '30 days'),
-('550e8400-e29b-41d4-a716-446655440202', '550e8400-e29b-41d4-a716-446655440104', 'bicycle', 'DL01CD5678', 'DL0120230005678', 28.7041, 77.1025, true, true, 4.8, 89, NOW() - INTERVAL '20 days');
+('550e8400-e29b-41d4-a716-446655440201', '550e8400-e29b-41d4-a716-446655440103', 'motorcycle', 'TS09AB1234', 'TS0920230001234', 17.4504, 78.3900, true, false, 4.5, 150, NOW() - INTERVAL '30 days'),
+('550e8400-e29b-41d4-a716-446655440202', '550e8400-e29b-41d4-a716-446655440104', 'bicycle', 'TS09CD5678', 'TS0920230005678', 17.4145, 78.4422, true, true, 4.8, 89, NOW() - INTERVAL '20 days');
 
 -- Insert sample addresses
 INSERT INTO addresses (id, user_id, type, street_address, landmark, city, state, pincode, latitude, longitude, is_default) VALUES
-('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440100', 'home', '123 MG Road', 'Near Metro Station', 'Delhi', 'Delhi', '110001', 28.6139, 77.2090, true),
-('550e8400-e29b-41d4-a716-446655440301', '550e8400-e29b-41d4-a716-446655440100', 'work', '456 Connaught Place', 'Near Central Park', 'Delhi', 'Delhi', '110002', 28.6280, 77.2070, false),
-('550e8400-e29b-41d4-a716-446655440302', '550e8400-e29b-41d4-a716-446655440101', 'home', '789 Rajouri Garden', 'Near City Mall', 'Delhi', 'Delhi', '110027', 28.6410, 77.1220, true);
+('550e8400-e29b-41d4-a716-446655440300', '550e8400-e29b-41d4-a716-446655440100', 'home', '123 Hi-Tech City Road', 'Near Cyber Towers', 'Hyderabad', 'Telangana', '500081', 17.4504, 78.3900, true),
+('550e8400-e29b-41d4-a716-446655440301', '550e8400-e29b-41d4-a716-446655440100', 'work', '456 Banjara Hills', 'Near Apollo Hospital', 'Hyderabad', 'Telangana', '500034', 17.4145, 78.4422, false),
+('550e8400-e29b-41d4-a716-446655440302', '550e8400-e29b-41d4-a716-446655440101', 'home', '789 Jubilee Hills', 'Near KBR Park', 'Hyderabad', 'Telangana', '500033', 17.4299, 78.4088, true);
 
 -- Insert sample orders
 INSERT INTO orders (id, user_id, rider_id, status, total_amount, delivery_fee, tax_amount, delivery_address_id, order_date, delivery_date, payment_status, payment_method) VALUES
@@ -157,6 +172,14 @@ INSERT INTO order_items (id, order_id, product_id, quantity, unit_price, total_p
 INSERT INTO reviews (id, order_id, user_id, rider_id, rating, comment) VALUES
 ('550e8400-e29b-41d4-a716-446655440600', '550e8400-e29b-41d4-a716-446655440400', '550e8400-e29b-41d4-a716-446655440100', '550e8400-e29b-41d4-a716-446655440201', 5, 'Excellent service! Fresh vegetables delivered on time.'),
 ('550e8400-e29b-41d4-a716-446655440601', '550e8400-e29b-41d4-a716-446655440401', '550e8400-e29b-41d4-a716-446655440101', '550e8400-e29b-41d4-a716-446655440202', 4, 'Good quality products, delivery was prompt.');
+
+-- Insert sample addresses (with proper coordinates for delivery calculation)
+INSERT INTO addresses (id, user_id, type, street_address, landmark, city, state, pincode, latitude, longitude, is_default) VALUES
+('550e8400-e29b-41d4-a716-446655440310', '550e8400-e29b-41d4-a716-446655440100', 'home', '123 Hi-Tech City Road', 'Near Cyber Towers', 'Hyderabad', 'Telangana', '500081', 17.4504, 78.3900, true),
+('550e8400-e29b-41d4-a716-446655440311', '550e8400-e29b-41d4-a716-446655440100', 'work', '456 Banjara Hills', 'Near Apollo Hospital', 'Hyderabad', 'Telangana', '500034', 17.4145, 78.4422, false),
+('550e8400-e29b-41d4-a716-446655440312', '550e8400-e29b-41d4-a716-446655440101', 'home', '789 Jubilee Hills', 'Near KBR Park', 'Hyderabad', 'Telangana', '500033', 17.4299, 78.4088, true),
+('550e8400-e29b-41d4-a716-446655440313', '550e8400-e29b-41d4-a716-446655440100', 'home', 'A-123 Gachibowli', 'Near Financial District', 'Hyderabad', 'Telangana', '500032', 17.4401, 78.3489, false),
+('550e8400-e29b-41d4-a716-446655440314', '550e8400-e29b-41d4-a716-446655440101', 'work', 'Tower B, Hi-Tech City', 'Near Mindspace', 'Hyderabad', 'Telangana', '500081', 17.4483, 78.3908, false);
 
 -- Insert sample notifications
 INSERT INTO notifications (id, user_id, title, message, type, is_read) VALUES

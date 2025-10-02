@@ -17,8 +17,8 @@ import { CartService } from '../../services/api/cartService';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
-type ProductDetailScreenNavigationProp = StackNavigationProp<any, 'ProductDetail'>;
-type ProductDetailScreenRouteProp = RouteProp<any, 'ProductDetail'>;
+type ProductDetailScreenNavigationProp = any;
+type ProductDetailScreenRouteProp = any;
 
 interface Product {
   id: string;

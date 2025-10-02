@@ -14,7 +14,7 @@ import { useAuth } from '../../services/auth/AuthContext';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
-type ProfileScreenNavigationProp = StackNavigationProp<any, 'Profile'>;
+type ProfileScreenNavigationProp = any;
 
 interface UserStats {
   totalOrders: number;

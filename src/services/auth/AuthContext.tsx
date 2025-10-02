@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { AuthState, User, SignUpData, SignInData } from '../../types/auth'
 import { AuthService } from './authService'
+import { supabase } from '../api/supabase'
 
 interface AuthContextType extends AuthState {
   signUp: (data: SignUpData) => Promise<{ user: User | null; error: string | null }>
   signIn: (data: SignInData) => Promise<{ user: User | null; error: string | null }>
   signOut: () => Promise<{ error: string | null }>
   refreshUser: () => Promise<void>
+  isProfileComplete: boolean
+  checkProfileComplete: (user: User) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,6 +32,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading: true,
     isAuthenticated: false,
   })
+
+  const [isProfileComplete, setIsProfileComplete] = useState(false)
 
   // Check for existing session on app start
   useEffect(() => {
@@ -116,21 +121,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return result
   }
 
+  const checkProfileComplete = (user: User): boolean => {
+    return !!(user.full_name && user.full_name.trim() !== '' &&
+              user.phone && user.phone.trim() !== '');
+  }
+
   const refreshUser = async (): Promise<void> => {
     const { user, error } = await AuthService.getCurrentUser()
 
     if (user && !error) {
+      const profileComplete = checkProfileComplete(user)
       setAuthState(prev => ({
         ...prev,
         user,
         isAuthenticated: true,
       }))
+      setIsProfileComplete(profileComplete)
     } else {
       setAuthState(prev => ({
         ...prev,
         user: null,
         isAuthenticated: false,
       }))
+      setIsProfileComplete(false)
     }
   }
 
@@ -140,6 +153,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signOut,
     refreshUser,
+    isProfileComplete,
+    checkProfileComplete,
   }
 
   return (

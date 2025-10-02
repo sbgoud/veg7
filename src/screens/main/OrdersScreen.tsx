@@ -14,7 +14,7 @@ import { useAuth } from '../../services/auth/AuthContext';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
-type OrdersScreenNavigationProp = StackNavigationProp<any, 'Orders'>;
+type OrdersScreenNavigationProp = any;
 
 interface Order {
   id: string;

@@ -10,15 +10,18 @@ import {
   Image,
   RefreshControl,
   Dimensions,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import * as Location from 'expo-location';
 import { useAuth } from '../../services/auth/AuthContext';
 import { supabase } from '../../services/api/supabase';
-import { RootStackParamList } from '../../navigation/AppNavigator';
+import { findNearestStore, formatDistance, formatDeliveryDuration, calculateDeliveryFee, Location as LocationType } from '../../utils/locationUtils';
 
 const { width } = Dimensions.get('window');
 
-type HomeScreenNavigationProp = StackNavigationProp<any, 'Home'>;
+type HomeScreenNavigationProp = any;
 
 interface Category {
   id: string;
@@ -46,6 +49,16 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [userAddresses, setUserAddresses] = useState<any[]>([]);
+  const [deliveryInfo, setDeliveryInfo] = useState<{
+    distance: string;
+    duration: string;
+    fee: number;
+    storeName: string;
+  } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const { user, signOut, isAuthenticated } = useAuth();
 
   const navigateToProducts = () => {
@@ -64,8 +77,88 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     console.log('Product pressed');
   };
 
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError('Location permission denied');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+      setLocationError('Error requesting location permission');
+      return false;
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    setLocationLoading(true);
+    setLocationError(null);
+
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) {
+        setLocationLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const locationData: LocationType = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+
+      setCurrentLocation(locationData);
+      return locationData;
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setLocationError('Unable to get your location');
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  const calculateDeliveryInfo = async (latitude: number, longitude: number) => {
+    try {
+      // Load stores to calculate nearest store
+      const { data: storesData, error: storesError } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('is_active', true);
+
+      if (!storesError && storesData) {
+        const nearestStoreInfo = findNearestStore(
+          { latitude, longitude },
+          storesData.map(store => ({
+            name: store.name,
+            address: store.address,
+            latitude: store.latitude,
+            longitude: store.longitude,
+          }))
+        );
+
+        if (nearestStoreInfo) {
+          setDeliveryInfo({
+            distance: formatDistance(nearestStoreInfo.distance),
+            duration: formatDeliveryDuration(nearestStoreInfo.duration),
+            fee: calculateDeliveryFee(nearestStoreInfo.distance),
+            storeName: nearestStoreInfo.store.name,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error calculating delivery info:', error);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    // Try to get user location on component mount
+    getCurrentLocation();
   }, []);
 
   const loadData = async () => {
@@ -97,6 +190,35 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error loading products:', productsError);
       } else {
         setFeaturedProducts(productsData || []);
+      }
+
+      // Load user addresses and calculate delivery info
+      if (isAuthenticated && user) {
+        const { data: addressesData, error: addressesError } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_default', true)
+          .single();
+
+        if (!addressesError && addressesData) {
+          setUserAddresses([addressesData]);
+          await calculateDeliveryInfo(addressesData.latitude, addressesData.longitude);
+        } else {
+          // No saved address, use current location if available
+          if (currentLocation) {
+            await calculateDeliveryInfo(currentLocation.latitude, currentLocation.longitude);
+            setUserAddresses([]);
+          } else {
+            setUserAddresses([]);
+            setDeliveryInfo(null);
+          }
+        }
+      } else {
+        // For non-authenticated users, use current location if available
+        if (currentLocation) {
+          await calculateDeliveryInfo(currentLocation.latitude, currentLocation.longitude);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -169,6 +291,100 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Prominent Delivery Time Display */}
+        {deliveryInfo && (
+          <View style={styles.deliveryTimeHeader}>
+            <View style={styles.deliveryTimeContainer}>
+              <Text style={styles.deliveryTimeIcon}>🚚</Text>
+              <View style={styles.deliveryTimeInfo}>
+                <Text style={styles.deliveryTimeLabel}>Delivery in</Text>
+                <Text style={styles.deliveryTimeValue}>{deliveryInfo.duration}</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={getCurrentLocation}
+              disabled={locationLoading}
+            >
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="#4CAF50" />
+              ) : (
+                <Text style={styles.locationButtonText}>📍 Update Location</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Location Error Display */}
+        {locationError && (
+          <View style={styles.locationErrorContainer}>
+            <Text style={styles.locationErrorText}>{locationError}</Text>
+            <TouchableOpacity
+              style={styles.retryLocationButton}
+              onPress={getCurrentLocation}
+            >
+              <Text style={styles.retryLocationText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Location Loading for non-authenticated users */}
+        {!isAuthenticated && locationLoading && (
+          <View style={styles.locationLoadingContainer}>
+            <ActivityIndicator size="small" color="#4CAF50" />
+            <Text style={styles.locationLoadingText}>Getting your location...</Text>
+          </View>
+        )}
+
+        {/* Address and Delivery Info */}
+        {isAuthenticated && deliveryInfo && (
+          <View style={styles.deliveryInfo}>
+            <View style={styles.addressContainer}>
+              <Text style={styles.deliveryIcon}>📍</Text>
+              <View>
+                <Text style={styles.deliveryLabel}>Delivering to:</Text>
+                <Text style={styles.addressText}>
+                  {userAddresses[0]?.street_address}, {userAddresses[0]?.city}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.deliveryDetails}>
+              <View style={styles.deliveryItem}>
+                <Text style={styles.deliveryIcon}>🏪</Text>
+                <Text style={styles.deliveryText}>{deliveryInfo.storeName}</Text>
+              </View>
+              <View style={styles.deliveryItem}>
+                <Text style={styles.deliveryIcon}>📏</Text>
+                <Text style={styles.deliveryText}>{deliveryInfo.distance}</Text>
+              </View>
+              <View style={styles.deliveryItem}>
+                <Text style={styles.deliveryIcon}>⏱️</Text>
+                <Text style={styles.deliveryText}>{deliveryInfo.duration}</Text>
+              </View>
+              <View style={styles.deliveryItem}>
+                <Text style={styles.deliveryIcon}>🚚</Text>
+                <Text style={styles.deliveryText}>₹{deliveryInfo.fee}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Add Address Prompt for Authenticated Users without Address */}
+        {isAuthenticated && !deliveryInfo && (
+          <TouchableOpacity
+            style={styles.addAddressPrompt}
+            onPress={() => navigation.navigate('Address')}
+          >
+            <Text style={styles.addAddressIcon}>📍</Text>
+            <View>
+              <Text style={styles.addAddressTitle}>Add Delivery Address</Text>
+              <Text style={styles.addAddressSubtitle}>Get faster delivery with your location</Text>
+            </View>
+            <Text style={styles.addAddressArrow}>›</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Categories Section */}
         <View style={styles.section}>
@@ -459,6 +675,169 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     color: '#666',
+  },
+  deliveryInfo: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 12,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  deliveryIcon: {
+    fontSize: 18,
+    marginRight: 10,
+  },
+  deliveryLabel: {
+    fontSize: 12,
+    color: '#666',
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  addressText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  deliveryDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  deliveryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deliveryText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 5,
+  },
+  addAddressPrompt: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 12,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addAddressIcon: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  addAddressTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  addAddressSubtitle: {
+    fontSize: 12,
+    color: '#666',
+  },
+  addAddressArrow: {
+    fontSize: 24,
+    color: '#4CAF50',
+    marginLeft: 'auto',
+  },
+  deliveryTimeHeader: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginBottom: 15,
+  },
+  deliveryTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  deliveryTimeIcon: {
+    fontSize: 24,
+    color: '#fff',
+    marginRight: 10,
+  },
+  deliveryTimeInfo: {
+    flex: 1,
+  },
+  deliveryTimeLabel: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.9,
+    textTransform: 'uppercase',
+  },
+  deliveryTimeValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  locationButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  locationButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  locationErrorContainer: {
+    backgroundColor: '#ffebee',
+    marginHorizontal: 20,
+    marginBottom: 15,
+    padding: 15,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  locationErrorText: {
+    color: '#c62828',
+    fontSize: 14,
+    flex: 1,
+  },
+  retryLocationButton: {
+    backgroundColor: '#c62828',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 15,
+  },
+  retryLocationText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  locationLoadingContainer: {
+    backgroundColor: '#e8f5e8',
+    marginHorizontal: 20,
+    marginBottom: 15,
+    padding: 15,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationLoadingText: {
+    color: '#2e7d32',
+    fontSize: 14,
+    marginLeft: 10,
   },
 });
 
