@@ -21,21 +21,49 @@ export class AuthService {
       }
 
       if (authData.user) {
-        // Create user profile in our custom users table
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: data.email,
-            full_name: data.full_name,
-            phone: data.phone || '',
-            role: 'user',
-            is_active: true,
-          })
+        // Wait a moment for auth to be fully processed
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (profileError) {
-          console.error('Error creating user profile:', profileError)
-          return { user: null, error: 'Failed to create user profile' }
+        // Create user profile in our custom users table with retry logic
+        const maxRetries = 3;
+        let lastError;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const { error: profileError } = await supabase
+              .from('users')
+              .insert({
+                id: authData.user.id,
+                email: data.email,
+                full_name: data.full_name,
+                phone: data.phone || '',
+                role: 'user',
+                is_active: true,
+              })
+
+            if (!profileError) {
+              console.log('User profile created successfully');
+              break;
+            }
+
+            lastError = profileError;
+            console.log(`Profile creation attempt ${attempt} failed:`, profileError.message);
+
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+          } catch (error) {
+            lastError = error;
+            console.error(`Profile creation attempt ${attempt} error:`, error);
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+          }
+        }
+
+        if (lastError) {
+          console.error('Final error creating user profile:', lastError);
+          return { user: null, error: 'Failed to create user profile: ' + lastError.message }
         }
 
         const user: User = {
@@ -72,77 +100,7 @@ export class AuthService {
       }
 
       if (authData.user) {
-        // Try to get user profile from our custom users table
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single()
-
-        if (profileError && profileError.code === 'PGRST116') {
-          // Profile doesn't exist, create one automatically
-          console.log('User profile not found, creating one...')
-
-          const { error: createError } = await supabase
-            .from('users')
-            .insert({
-              id: authData.user.id,
-              email: data.email,
-              full_name: authData.user.user_metadata?.full_name || 'User',
-              phone: authData.user.user_metadata?.phone || '',
-              role: 'user',
-              is_active: true,
-            })
-
-          if (createError) {
-            console.error('Error creating user profile:', createError)
-            // Continue with basic auth user info instead of failing
-            console.log('Continuing with basic authentication...')
-          }
-
-          // Wait a bit for profile creation to complete
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          // Try to fetch the profile again
-          const { data: newProfile, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authData.user.id)
-            .single()
-
-          if (fetchError && fetchError.code !== 'PGRST116') {
-            console.error('Error fetching new user profile:', fetchError)
-          }
-
-          const user: User = {
-            id: authData.user.id,
-            email: data.email,
-            full_name: authData.user.user_metadata?.full_name || 'User',
-            phone: authData.user.user_metadata?.phone || '',
-            role: 'user',
-            is_active: true,
-            created_at: newProfile?.created_at || new Date().toISOString(),
-            updated_at: newProfile?.updated_at || new Date().toISOString(),
-          }
-
-          return { user, error: null }
-        } else if (profileError) {
-          console.error('Error fetching user profile:', profileError)
-          return { user: null, error: 'Failed to fetch user profile' }
-        }
-
-        const user: User = {
-          id: profile.id,
-          email: profile.email,
-          full_name: profile.full_name,
-          phone: profile.phone,
-          role: profile.role,
-          is_active: profile.is_active,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
-        }
-
-        return { user, error: null }
+        return await this.getOrCreateUserProfile(authData.user.id, data.email, authData.user.user_metadata)
       }
 
       return { user: null, error: 'Sign in failed' }
@@ -163,94 +121,130 @@ export class AuthService {
     }
   }
 
-  // Get current user
-  static async getCurrentUser(): Promise<{ user: User | null; error: string | null }> {
-    try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+   // Helper method to get or create user profile
+   static async getOrCreateUserProfile(userId: string, email: string, userMetadata?: any): Promise<{ user: User | null; error: string | null }> {
+     try {
+       // Try to get user profile from our custom users table
+       const { data: profile, error: profileError } = await supabase
+         .from('users')
+         .select('*')
+         .eq('id', userId)
+         .single()
 
-      if (authError) {
-        return { user: null, error: authError.message }
-      }
+       if (profileError && profileError.code === 'PGRST116') {
+         // Profile doesn't exist, create one automatically with retry logic
+         console.log('User profile not found, creating one...')
 
-      if (authUser) {
-        // Try to get user profile from our custom users table
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authUser.id)
-          .single()
+         const maxRetries = 3;
+         let lastError;
 
-        if (profileError && profileError.code === 'PGRST116') {
-          // Profile doesn't exist, create one automatically
-          console.log('User profile not found, creating one...')
+         for (let attempt = 1; attempt <= maxRetries; attempt++) {
+           try {
+             const { error: createError } = await supabase
+               .from('users')
+               .insert({
+                 id: userId,
+                 email: email,
+                 full_name: userMetadata?.full_name || 'User',
+                 phone: userMetadata?.phone || '',
+                 role: 'user',
+                 is_active: true,
+               })
 
-          const { error: createError } = await supabase
-            .from('users')
-            .insert({
-              id: authUser.id,
-              email: authUser.email || '',
-              full_name: authUser.user_metadata?.full_name || 'User',
-              phone: authUser.user_metadata?.phone || '',
-              role: 'user',
-              is_active: true,
-            })
+             if (!createError) {
+               console.log('User profile created successfully');
+               break;
+             }
 
-          if (createError) {
-            console.error('Error creating user profile:', createError)
-            // Continue with basic auth user info instead of failing
-          }
+             lastError = createError;
+             console.log(`Profile creation attempt ${attempt} failed:`, createError.message);
 
-          // Wait a bit for profile creation to complete
-          await new Promise(resolve => setTimeout(resolve, 500));
+             if (attempt < maxRetries) {
+               await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+             }
+           } catch (error) {
+             lastError = error;
+             console.error(`Profile creation attempt ${attempt} error:`, error);
+             if (attempt < maxRetries) {
+               await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+             }
+           }
+         }
 
-          // Try to fetch the profile again
-          const { data: newProfile, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authUser.id)
-            .single()
+         if (lastError) {
+           console.error('Failed to create user profile after retries:', lastError);
+           return { user: null, error: 'Failed to create user profile: ' + lastError.message }
+         }
 
-          if (fetchError && fetchError.code !== 'PGRST116') {
-            console.error('Error fetching new user profile:', fetchError)
-          }
+         // Wait a bit for profile creation to complete
+         await new Promise(resolve => setTimeout(resolve, 500));
 
-          const user: User = {
-            id: authUser.id,
-            email: authUser.email || '',
-            full_name: authUser.user_metadata?.full_name || 'User',
-            phone: authUser.user_metadata?.phone || '',
-            role: 'user',
-            is_active: true,
-            created_at: newProfile?.created_at || new Date().toISOString(),
-            updated_at: newProfile?.updated_at || new Date().toISOString(),
-          }
+         // Try to fetch the profile again
+         const { data: newProfile, error: fetchError } = await supabase
+           .from('users')
+           .select('*')
+           .eq('id', userId)
+           .single()
 
-          return { user, error: null }
-        } else if (profileError) {
-          console.error('Error fetching user profile:', profileError)
-          return { user: null, error: 'Failed to fetch user profile' }
-        }
+         if (fetchError) {
+           console.error('Error fetching newly created profile:', fetchError)
+           return { user: null, error: 'Failed to fetch user profile' }
+         }
 
-        const user: User = {
-          id: profile.id,
-          email: profile.email,
-          full_name: profile.full_name,
-          phone: profile.phone,
-          role: profile.role,
-          is_active: profile.is_active,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
-        }
+         const user: User = {
+           id: newProfile.id,
+           email: newProfile.email,
+           full_name: newProfile.full_name,
+           phone: newProfile.phone,
+           role: newProfile.role,
+           is_active: newProfile.is_active,
+           created_at: newProfile.created_at,
+           updated_at: newProfile.updated_at,
+         }
 
-        return { user, error: null }
-      }
+         return { user, error: null }
+       } else if (profileError) {
+         console.error('Error fetching user profile:', profileError)
+         return { user: null, error: 'Failed to fetch user profile' }
+       }
 
-      return { user: null, error: null }
-    } catch (error) {
-      console.error('Get current user error:', error)
-      return { user: null, error: 'An unexpected error occurred' }
-    }
-  }
+       const user: User = {
+         id: profile.id,
+         email: profile.email,
+         full_name: profile.full_name,
+         phone: profile.phone,
+         role: profile.role,
+         is_active: profile.is_active,
+         created_at: profile.created_at,
+         updated_at: profile.updated_at,
+       }
+
+       return { user, error: null }
+     } catch (error) {
+       console.error('Get or create user profile error:', error)
+       return { user: null, error: 'An unexpected error occurred' }
+     }
+   }
+
+   // Get current user
+   static async getCurrentUser(): Promise<{ user: User | null; error: string | null }> {
+     try {
+       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+
+       if (authError) {
+         return { user: null, error: authError.message }
+       }
+
+       if (authUser) {
+         return await this.getOrCreateUserProfile(authUser.id, authUser.email || '', authUser.user_metadata)
+       }
+
+       return { user: null, error: null }
+     } catch (error) {
+       console.error('Get current user error:', error)
+       return { user: null, error: 'An unexpected error occurred' }
+     }
+   }
 
   // Reset password (if needed later)
   static async resetPassword(email: string): Promise<{ error: string | null }> {

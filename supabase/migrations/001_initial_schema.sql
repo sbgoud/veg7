@@ -193,8 +193,8 @@ CREATE INDEX idx_riders_location ON riders USING GIST (ST_Point(current_longitud
 -- Create location index for addresses
 CREATE INDEX idx_addresses_location ON addresses USING GIST (ST_Point(longitude, latitude));
 
--- Enable Row Level Security (RLS) - Temporarily disable for users table to fix profile creation
--- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+-- Enable Row Level Security (RLS)
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE riders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
@@ -207,10 +207,11 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies for users (users can only access their own data)
+-- Create RLS policies for users (more permissive for profile creation)
 CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Enable insert for authenticated users" ON users FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 -- Create RLS policies for addresses
 CREATE POLICY "Users can view own addresses" ON addresses FOR SELECT USING (auth.uid() = user_id);

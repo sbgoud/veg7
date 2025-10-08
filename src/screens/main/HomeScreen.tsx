@@ -424,6 +424,46 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           />
         </View>
 
+        {/* Special Offers Section */}
+        <View style={styles.offersSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Special Offers</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.offersList}
+          >
+            <View style={styles.offerCard}>
+              <Text style={styles.offerIcon}>🥬</Text>
+              <View style={styles.offerInfo}>
+                <Text style={styles.offerTitle}>Fresh Vegetables</Text>
+                <Text style={styles.offerSubtitle}>Up to 30% OFF</Text>
+              </View>
+            </View>
+
+            <View style={styles.offerCard}>
+              <Text style={styles.offerIcon}>🍎</Text>
+              <View style={styles.offerInfo}>
+                <Text style={styles.offerTitle}>Organic Fruits</Text>
+                <Text style={styles.offerSubtitle}>Free Delivery</Text>
+              </View>
+            </View>
+
+            <View style={styles.offerCard}>
+              <Text style={styles.offerIcon}>🥕</Text>
+              <View style={styles.offerInfo}>
+                <Text style={styles.offerTitle}>Seasonal Special</Text>
+                <Text style={styles.offerSubtitle}>Buy 2 Get 1</Text>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity
@@ -838,6 +878,45 @@ const styles = StyleSheet.create({
     color: '#2e7d32',
     fontSize: 14,
     marginLeft: 10,
+  },
+  offersSection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  offersList: {
+    paddingVertical: 10,
+  },
+  offerCard: {
+    width: 200,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    marginRight: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  offerIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  offerInfo: {
+    flex: 1,
+  },
+  offerTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  offerSubtitle: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
   },
 });
 

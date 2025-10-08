@@ -27,7 +27,7 @@ interface Address {
   id: string;
   type: string;
   street_address: string;
-  directions?: string;
+  landmark?: string; // Updated to match database schema
   city: string;
   state: string;
   pincode: string;
@@ -132,7 +132,6 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         mapRef.current.animateToRegion(coords, 1000);
       }
 
-      Alert.alert('Success', 'Location detected! You can adjust the pin on the map.');
     } catch (error) {
       console.error('Error getting location:', error);
       setLocationError('Unable to get your location');
@@ -174,20 +173,40 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    // Initialize with Hyderabad location
-    setCurrentLocation({
-      latitude: 17.3850,
-      longitude: 78.4867,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
+    const initializeScreen = async () => {
+      console.log('=== ADDRESS SCREEN INITIALIZE ===');
+      console.log('Current user:', user);
+      console.log('isAuthenticated:', isAuthenticated);
 
-    // Get user's current location
-    getCurrentLocation();
-  }, []);
+      // Initialize with Hyderabad location
+      setCurrentLocation({
+        latitude: 17.3850,
+        longitude: 78.4867,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+
+      // Get user's current location
+      await getCurrentLocation();
+    };
+
+    initializeScreen();
+  }, [user, isAuthenticated]);
 
   const saveAddress = async () => {
-    if (!user) return;
+    console.log('=== SAVE ADDRESS DEBUG ===');
+    console.log('User object:', user);
+    console.log('isAuthenticated:', isAuthenticated);
+
+    if (!user) {
+      Alert.alert('Error', 'Please login to save addresses');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'Authentication required. Please login again.');
+      return;
+    }
 
     // Validation
     if (!houseNumber.trim()) {
@@ -215,37 +234,89 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
+    console.log('Attempting to save address for user ID:', user.id);
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      // First, ensure the user profile exists in the users table
+      console.log('Ensuring user profile exists...');
+
+      // Check if user profile exists
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileCheckError && profileCheckError.code === 'PGRST116') {
+        // Profile doesn't exist, try to create it
+        console.log('User profile not found, creating it...');
+
+        const { error: createProfileError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email || '',
+            full_name: user.full_name || 'User',
+            phone: user.phone || '',
+            role: 'user',
+            is_active: true,
+          });
+
+        if (createProfileError) {
+          console.error('Error creating user profile:', createProfileError);
+          Alert.alert('Error', 'Failed to create user profile. Please try logging out and back in.');
+          return;
+        } else {
+          console.log('User profile created successfully');
+        }
+      } else if (profileCheckError) {
+        console.error('Error checking user profile:', profileCheckError);
+        Alert.alert('Error', 'Failed to verify user profile. Please try again.');
+        return;
+      }
+
+      console.log('User profile verified, attempting to save address...');
+
+      // Now try to save the address
+      const { data, error } = await supabase
         .from('addresses')
         .insert({
           user_id: user.id,
-          type,
+          type: type === 'friends' ? 'other' : type,
           street_address: houseNumber.trim(),
-          directions: directions.trim() || null,
+          landmark: directions.trim() || null,
           city: city.trim(),
           state: state.trim(),
           pincode: pincode.trim(),
           latitude: selectedLocation.latitude,
           longitude: selectedLocation.longitude,
-          is_default: true, // For now, make all new addresses default
-        });
+          is_default: true,
+        })
+        .select();
+
+      console.log('Insert result:', { data, error });
 
       if (error) {
-        console.error('Error saving address:', error);
-        Alert.alert('Error', 'Failed to save address. Please try again.');
+        console.error('Supabase error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+
+        // Special handling for different types of errors
+        if (error.code === '23503' && error.message.includes('addresses_user_id_fkey')) {
+          Alert.alert('Error', 'User profile not found. Please log out and log back in to refresh your session.');
+        } else if (error.code === '42501' && error.message.includes('row-level security policy')) {
+          Alert.alert('Error', 'Permission denied. Please try logging out and back in.');
+        } else {
+          Alert.alert('Error', `Failed to save address: ${error.message}`);
+        }
       } else {
-        Alert.alert(
-          'Success',
-          'Address saved successfully!',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('Home')
-            }
-          ]
-        );
+        console.log('Address saved successfully');
+        // Navigate back to home without alert
+        navigation.navigate('Home');
       }
     } catch (error) {
       console.error('Error saving address:', error);
@@ -268,12 +339,12 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
   const resetForm = () => {
     setType('home');
     setHouseNumber('');
-    setLandmark('');
+    setApartmentRoad('');
     setCity('');
     setState('');
     setPincode('');
-    setLatitude(undefined);
-    setLongitude(undefined);
+    setLatitude(17.3850);
+    setLongitude(78.4867);
   };
 
   const setDefaultAddress = async (addressId: string) => {
@@ -296,7 +367,8 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error setting default address:', error);
         Alert.alert('Error', 'Failed to set default address');
       } else {
-        loadAddresses();
+        // Refresh might be needed if addresses are displayed elsewhere
+        console.log('Default address set successfully');
       }
     } catch (error) {
       console.error('Error setting default address:', error);
@@ -326,7 +398,8 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
                 console.error('Error deleting address:', error);
                 Alert.alert('Error', 'Failed to delete address');
               } else {
-                loadAddresses();
+                // Refresh might be needed if addresses are displayed elsewhere
+                console.log('Address deleted successfully');
               }
             } catch (error) {
               console.error('Error deleting address:', error);
@@ -367,7 +440,7 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
 
       <Text style={styles.addressText}>
         {item.street_address}
-        {item.directions && `, ${item.directions}`}
+        {item.landmark && `, ${item.landmark}`}
       </Text>
       <Text style={styles.addressText}>
         {item.city}, {item.state} - {item.pincode}
