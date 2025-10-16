@@ -44,6 +44,9 @@ const { width, height } = Dimensions.get('window');
 const MAP_HEIGHT = height * 0.35;
 
 const AddressScreen: React.FC<Props> = ({ navigation }) => {
+  // UI state
+  const [activeView, setActiveView] = useState<'list' | 'add'>('list');
+
   // Location and Map state
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -63,6 +66,10 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
     fee: number;
   } | null>(null);
 
+  // Addresses list state
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+
   // Form state
   const [type, setType] = useState('home');
   const [houseNumber, setHouseNumber] = useState('');
@@ -77,6 +84,30 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
 
   const { user, isAuthenticated } = useAuth();
   const mapRef = useRef<MapView>(null);
+
+  // Load user's addresses
+  const loadAddresses = async () => {
+    if (!isAuthenticated || !user) return;
+
+    setAddressesLoading(true);
+    try {
+      const { data: addressesData, error } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading addresses:', error);
+      } else {
+        setAddresses(addressesData || []);
+      }
+    } catch (error) {
+      console.error('Error loading addresses:', error);
+    } finally {
+      setAddressesLoading(false);
+    }
+  };
 
   // Request location permissions and get current location
   const requestLocationPermission = async () => {
@@ -177,6 +208,9 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
       console.log('=== ADDRESS SCREEN INITIALIZE ===');
       console.log('Current user:', user);
       console.log('isAuthenticated:', isAuthenticated);
+
+      // Load user's addresses
+      await loadAddresses();
 
       // Initialize with Hyderabad location
       setCurrentLocation({
@@ -315,8 +349,11 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         }
       } else {
         console.log('Address saved successfully');
-        // Navigate back to home without alert
-        navigation.navigate('Home');
+        // Reload addresses and switch back to list view
+        await loadAddresses();
+        setActiveView('list');
+        // Reset form
+        resetForm();
       }
     } catch (error) {
       console.error('Error saving address:', error);
@@ -398,8 +435,9 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
                 console.error('Error deleting address:', error);
                 Alert.alert('Error', 'Failed to delete address');
               } else {
-                // Refresh might be needed if addresses are displayed elsewhere
                 console.log('Address deleted successfully');
+                // Reload addresses to update the list
+                await loadAddresses();
               }
             } catch (error) {
               console.error('Error deleting address:', error);
@@ -462,15 +500,114 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.unauthorizedSubtitle}>Please login to manage addresses</Text>
           <TouchableOpacity
             style={styles.loginButton}
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => navigation.navigate('AuthModal')}
           >
-            <Text style={styles.loginButtonText}>Login</Text>
+            <Text style={styles.loginButtonText}>Sign In / Sign Up</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Show addresses list or add form based on activeView
+  if (activeView === 'list') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Text style={styles.backButton}>←</Text>
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Manage Addresses</Text>
+              <TouchableOpacity onPress={() => setActiveView('add')}>
+                <Text style={styles.addButton}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Addresses List */}
+            <View style={styles.addressesSection}>
+              {addressesLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#4CAF50" />
+                  <Text style={styles.loadingText}>Loading addresses...</Text>
+                </View>
+              ) : addresses.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyIcon}>📍</Text>
+                  <Text style={styles.emptyTitle}>No Addresses Saved</Text>
+                  <Text style={styles.emptySubtitle}>Add your first delivery address</Text>
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={() => setActiveView('add')}
+                  >
+                    <Text style={styles.primaryButtonText}>Add Address</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.sectionTitle}>Your Addresses</Text>
+                  {addresses.map((address) => (
+                    <TouchableOpacity
+                      key={address.id}
+                      style={styles.addressCard}
+                      onPress={() => {
+                        // TODO: Implement address editing
+                        console.log('Edit address:', address.id);
+                      }}
+                    >
+                      <View style={styles.addressHeader}>
+                        <View>
+                          <Text style={styles.addressType}>{address.type.toUpperCase()}</Text>
+                          {address.is_default && (
+                            <Text style={styles.defaultBadge}>Default</Text>
+                          )}
+                        </View>
+                        <TouchableOpacity
+                          style={styles.deleteButton}
+                          onPress={() => deleteAddress(address.id)}
+                        >
+                          <Text style={styles.deleteText}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text style={styles.addressText}>
+                        {address.street_address}
+                        {address.landmark && `, ${address.landmark}`}
+                      </Text>
+                      <Text style={styles.addressText}>
+                        {address.city}, {address.state} - {address.pincode}
+                      </Text>
+
+                      {address.latitude && address.longitude && (
+                        <Text style={styles.locationCoordinates}>
+                          📍 {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+
+                  <TouchableOpacity
+                    style={styles.addNewButton}
+                    onPress={() => setActiveView('add')}
+                  >
+                    <Text style={styles.addNewIcon}>+</Text>
+                    <Text style={styles.addNewText}>Add New Address</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
+  // Add new address view
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -480,10 +617,10 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPress={() => setActiveView('list')}>
               <Text style={styles.backButton}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Select Your Location</Text>
+            <Text style={styles.headerTitle}>Add New Address</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -1096,6 +1233,116 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
- });
+  // Addresses list styles
+  addressesSection: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  addressCard: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  addressType: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  defaultBadge: {
+    fontSize: 12,
+    color: '#4CAF50',
+    backgroundColor: '#e8f5e8',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  deleteButton: {
+    backgroundColor: '#ff4444',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  deleteText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  addNewButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  addNewIcon: {
+    fontSize: 20,
+    color: '#fff',
+    marginRight: 10,
+  },
+  addNewText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  addButton: {
+    fontSize: 24,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  primaryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+});
 
 export default AddressScreen;

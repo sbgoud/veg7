@@ -87,7 +87,7 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     if (!isAuthenticated || !user || !product) {
       Alert.alert('Login Required', 'Please login to add items to cart', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Login', onPress: () => navigation.navigate('Login') },
+        { text: 'Login', onPress: () => navigation.navigate('AuthModal') },
       ]);
       return;
     }
@@ -110,10 +110,8 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
-      Alert.alert('Success', `${product.name} added to cart!`, [
-        { text: 'Continue Shopping', style: 'default' },
-        { text: 'View Cart', onPress: () => navigation.navigate('Cart') },
-      ]);
+      // Show success message without alert
+      console.log(`${product.name} added to cart!`);
     } catch (error) {
       console.error('Error adding to cart:', error);
       Alert.alert('Error', 'An unexpected error occurred');
@@ -245,23 +243,33 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
         {product.stock_quantity > 0 ? (
-          <TouchableOpacity
-            style={[
-              styles.addToCartButton,
-              isAddingToCart && styles.addToCartButtonDisabled
-            ]}
-            onPress={addToCart}
-            disabled={isAddingToCart}
-          >
-            {isAddingToCart ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <Text style={styles.addToCartIcon}>🛒</Text>
-                <Text style={styles.addToCartText}>Add to Cart</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.addToCartButton,
+                isAddingToCart && styles.addToCartButtonDisabled
+              ]}
+              onPress={addToCart}
+              disabled={isAddingToCart}
+            >
+              {isAddingToCart ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.addToCartIcon}>🛒</Text>
+                  <Text style={styles.addToCartText}>Add to Cart</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.goToCartButton}
+              onPress={() => navigation.navigate('Cart')}
+            >
+              <Text style={styles.goToCartIcon}>🛒</Text>
+              <Text style={styles.goToCartText}>Go to Cart</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.outOfStockButton}>
             <Text style={styles.outOfStockText}>Out of Stock</Text>
@@ -447,13 +455,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   addToCartButton: {
     backgroundColor: '#4CAF50',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
+    paddingHorizontal: 20,
     borderRadius: 25,
+    flex: 1,
   },
   addToCartButtonDisabled: {
     opacity: 0.7,
@@ -464,6 +478,27 @@ const styles = StyleSheet.create({
   },
   addToCartText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  goToCartButton: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    flex: 1,
+  },
+  goToCartIcon: {
+    fontSize: 18,
+    marginRight: 10,
+  },
+  goToCartText: {
+    color: '#4CAF50',
     fontSize: 16,
     fontWeight: 'bold',
   },

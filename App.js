@@ -12,13 +12,17 @@ import ProductDetailScreen from './src/screens/main/ProductDetailScreen';
 import CartScreen from './src/screens/main/CartScreen';
 import ProfileScreen from './src/screens/main/ProfileScreen';
 import AddressScreen from './src/screens/main/AddressScreen';
-import LoginScreen from './src/screens/auth/LoginScreen';
+import OrdersScreen from './src/screens/main/OrdersScreen';
+import OrderDetailScreen from './src/screens/main/OrderDetailScreen';
+import CheckoutScreen from './src/screens/main/CheckoutScreen';
+import AuthScreen from './src/screens/auth/LoginScreen';
 import ProfileUpdateScreen from './src/screens/auth/ProfileUpdateScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -79,6 +83,17 @@ const MainTabNavigator = () => {
         }}
       />
       <Tab.Screen
+        name="Orders"
+        component={OrdersScreen}
+        options={{
+          tabBarLabel: 'Orders',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>📦</Text>
+          ),
+          headerTitle: 'My Orders',
+        }}
+      />
+      <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
@@ -89,35 +104,24 @@ const MainTabNavigator = () => {
           headerTitle: 'Profile',
         }}
       />
-      <Tab.Screen
-        name="Address"
-        component={AddressScreen}
-        options={{
-          tabBarLabel: 'Address',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📍</Text>
-          ),
-          headerTitle: 'My Addresses',
-        }}
-      />
     </Tab.Navigator>
   );
 };
 
 const AppContent = () => {
-  const { isAuthenticated, isLoading, isProfileComplete } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading veg7...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <Text style={{ fontSize: 18, color: '#4CAF50', fontWeight: 'bold' }}>Loading veg7...</Text>
       </View>
     );
   }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Show tabs for everyone - no login required for browsing */}
+      {/* Main app with bottom tabs */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
 
       {/* Product detail screen */}
@@ -133,19 +137,65 @@ const AppContent = () => {
         }}
       />
 
-      {/* Authentication screens */}
-      <Stack.Screen name="Login" component={LoginScreen} />
+      {/* Authentication modal - shows when users need to login/signup */}
       <Stack.Screen
-        name="ProfileUpdate"
-        component={ProfileUpdateScreen}
+        name="AuthModal"
+        component={AuthScreen}
         options={{
-          headerShown: true,
-          headerStyle: { backgroundColor: '#4CAF50' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
-          title: 'Complete Profile',
+          presentation: 'modal',
+          headerShown: false,
         }}
       />
+
+      {/* Protected screens - only accessible when authenticated */}
+      {isAuthenticated && (
+        <>
+          <Stack.Screen
+            name="Checkout"
+            component={CheckoutScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: '#4CAF50' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontWeight: 'bold' },
+              title: 'Checkout',
+            }}
+          />
+          <Stack.Screen
+            name="Address"
+            component={AddressScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: '#4CAF50' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontWeight: 'bold' },
+              title: 'My Addresses',
+            }}
+          />
+          <Stack.Screen
+            name="OrderDetail"
+            component={OrderDetailScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: '#4CAF50' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontWeight: 'bold' },
+              title: 'Order Details',
+            }}
+          />
+          <Stack.Screen
+            name="ProfileUpdate"
+            component={ProfileUpdateScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: '#4CAF50' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontWeight: 'bold' },
+              title: 'Complete Profile',
+            }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 };

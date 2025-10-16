@@ -121,7 +121,10 @@ const OrdersScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const renderOrder = ({ item }: { item: Order }) => (
-    <TouchableOpacity style={styles.orderCard}>
+    <TouchableOpacity 
+      style={styles.orderCard}
+      onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
+    >
       <View style={styles.orderHeader}>
         <View>
           <Text style={styles.orderId}>Order #{item.id.slice(-8)}</Text>
@@ -145,13 +148,24 @@ const OrdersScreen: React.FC<Props> = ({ navigation }) => {
             +{item.order_items.length - 2} more items
           </Text>
         )}
+        {item.payment_method === 'cod' && (
+          <Text style={styles.codNote}>
+            💰 Pay ₹{item.total_amount} when order arrives
+          </Text>
+        )}
       </View>
 
       <View style={styles.orderFooter}>
         <Text style={styles.totalAmount}>₹{item.total_amount}</Text>
-        <Text style={styles.paymentStatus}>
-          {item.payment_status === 'completed' ? 'Paid' : 'Payment Pending'}
-        </Text>
+        <View style={styles.paymentInfo}>
+          <Text style={[
+            styles.paymentStatus,
+            item.payment_method === 'cod' && styles.codPayment
+          ]}>
+            {item.payment_method === 'cod' ? '💰 COD' : 
+             item.payment_status === 'completed' ? '✅ Paid' : '⏳ Payment Pending'}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -329,9 +343,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4CAF50',
   },
+  paymentInfo: {
+    alignItems: 'flex-end',
+  },
   paymentStatus: {
     fontSize: 14,
     color: '#666',
+    fontWeight: '500',
+  },
+  codPayment: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  codNote: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '500',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
 

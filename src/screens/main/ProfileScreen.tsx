@@ -34,19 +34,47 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { user, signOut } = useAuth();
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const { user, isAuthenticated, signOut } = useAuth();
+
+  // If not authenticated, show login required screen
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loginRequiredContainer}>
+          <Text style={styles.loginRequiredIcon}>👤</Text>
+          <Text style={styles.loginRequiredTitle}>Login Required</Text>
+          <Text style={styles.loginRequiredText}>
+            Please sign in to view your profile and manage your account.
+          </Text>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => navigation.navigate('AuthModal')}
+          >
+            <Text style={styles.loginButtonText}>Sign In / Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       loadUserStats();
+    } else {
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [isAuthenticated, user]);
 
   const loadUserStats = async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
+      setProfileError(null);
 
       // Get user's order statistics
       const { data: orders, error: ordersError } = await supabase
@@ -57,6 +85,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
       if (ordersError) {
         console.error('Error loading user stats:', ordersError);
+        setProfileError('Unable to load profile data. Some features may be limited.');
       } else {
         const totalOrders = orders?.length || 0;
         const totalSpent = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
@@ -64,11 +93,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         setUserStats({
           totalOrders,
           totalSpent,
-          memberSince: user.created_at,
+          memberSince: user.created_at || new Date().toISOString(),
         });
       }
     } catch (error) {
       console.error('Error loading user stats:', error);
+      setProfileError('Unable to load profile data. Some features may be limited.');
     } finally {
       setIsLoading(false);
     }
@@ -101,21 +131,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     );
   }
 
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Please login to view your profile</Text>
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={() => navigation.navigate('Login')}
-          >
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -135,6 +150,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.userName}>{user.full_name || 'User'}</Text>
           <Text style={styles.userEmail}>{user.email}</Text>
           <Text style={styles.userPhone}>{user.phone || 'No phone added'}</Text>
+
+          {/* Show profile error if there are issues */}
+          {profileError && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{profileError}</Text>
+            </View>
+          )}
         </View>
 
         {/* Stats Section */}
@@ -162,7 +184,19 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Account</Text>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Orders')}
+          >
+            <Text style={styles.menuItemIcon}>📦</Text>
+            <Text style={styles.menuItemText}>My Orders</Text>
+            <Text style={styles.menuItemArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Address')}
+          >
             <Text style={styles.menuItemIcon}>📍</Text>
             <Text style={styles.menuItemText}>Manage Addresses</Text>
             <Text style={styles.menuItemArrow}>›</Text>
@@ -231,17 +265,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  errorContainer: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  errorText: {
-    fontSize: 18,
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  emptySubtitle: {
+    fontSize: 16,
     color: '#666',
-    marginBottom: 20,
     textAlign: 'center',
+    marginBottom: 30,
   },
   loginButton: {
     backgroundColor: '#4CAF50',
@@ -291,6 +331,20 @@ const styles = StyleSheet.create({
   userPhone: {
     fontSize: 14,
     color: '#999',
+  },
+  errorBanner: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffeaa7',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#856404',
+    textAlign: 'center',
   },
   statsSection: {
     backgroundColor: '#fff',
@@ -360,6 +414,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signOutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Login required screen styles
+  loginRequiredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+  },
+  loginRequiredIcon: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  loginRequiredTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  loginRequiredText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24,
+  },
+  loginButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  loginButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',

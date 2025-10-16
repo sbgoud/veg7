@@ -5,8 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../services/auth/AuthContext';
 
 // Auth screens
-import LoginScreen from '../screens/auth/LoginScreen';
-import SignupScreen from '../screens/auth/SignupScreen';
+import AuthScreen from '../screens/auth/LoginScreen';
 
 // Main app screens
 import HomeScreen from '../screens/main/HomeScreen';
@@ -30,6 +29,7 @@ export type RootStackParamList = {
   Checkout: undefined;
   Orders: undefined;
   Profile: undefined;
+  AuthModal: undefined;
 };
 
 export type MainTabParamList = {
@@ -38,10 +38,30 @@ export type MainTabParamList = {
   Products: undefined;
   Cart: undefined;
   Profile: undefined;
+  AuthCart: undefined;
+  AuthProfile: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// Auth Navigator for handling Login and Signup screens
+const AuthNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={AuthScreen} />
+    </Stack.Navigator>
+  );
+};
+
+// Auth Stack Navigator for modal authentication
+const AuthStackNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={AuthScreen} />
+    </Stack.Navigator>
+  );
+};
 
 const MainTabNavigator: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -115,12 +135,12 @@ const MainTabNavigator: React.FC = () => {
         />
       ) : (
         <Tab.Screen
-          name="Cart"
-          component={LoginScreen}
+          name="AuthCart"
+          component={AuthNavigator}
           options={{
-            tabBarLabel: 'Cart',
+            tabBarLabel: 'Sign In',
             tabBarIcon: ({ color, size }) => (
-              <Text style={{ fontSize: size, color }}>🛒</Text>
+              <Text style={{ fontSize: size, color }}>🔐</Text>
             ),
             headerShown: false,
           }}
@@ -140,8 +160,8 @@ const MainTabNavigator: React.FC = () => {
         />
       ) : (
         <Tab.Screen
-          name="Profile"
-          component={LoginScreen}
+          name="AuthProfile"
+          component={AuthNavigator}
           options={{
             tabBarLabel: 'Profile',
             tabBarIcon: ({ color, size }) => (
@@ -180,9 +200,17 @@ const AppNavigator: React.FC = () => {
         }}
       />
 
-      {/* Authentication screens */}
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Signup" component={SignupScreen} />
+      {/* Authentication modal - shows when users need to login/signup */}
+      {!isAuthenticated && (
+        <Stack.Screen
+          name="AuthModal"
+          component={AuthStackNavigator}
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+      )}
 
       {/* Protected screens - only accessible when authenticated */}
       {isAuthenticated && (

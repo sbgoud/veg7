@@ -68,17 +68,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [])
 
   const signUp = async (data: SignUpData): Promise<{ user: User | null; error: string | null }> => {
+    console.log('🔄 AuthContext: Starting signup process');
     setAuthState(prev => ({ ...prev, isLoading: true }))
 
     const result = await AuthService.signUp(data)
 
     if (result.user && !result.error) {
+      console.log('✅ AuthContext: Signup successful, updating state');
       setAuthState({
         user: result.user,
         isLoading: false,
         isAuthenticated: true,
       })
     } else {
+      console.log('❌ AuthContext: Signup failed');
       setAuthState(prev => ({ ...prev, isLoading: false }))
     }
 
