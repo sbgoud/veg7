@@ -12,11 +12,15 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import * as Location from 'expo-location';
 import { useAuth } from '../../services/auth/AuthContext';
 import { supabase } from '../../services/api/supabase';
+import AddressSelectionModal from '../../components/AddressSelectionModal';
+import { getRandomVegetableImage } from '../../utils/imageUtils';
 // Inline location calculation functions to avoid import issues
 interface Location {
   latitude: number;
@@ -113,12 +117,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     fee: number;
     storeName: string;
   } | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userDefaultAddress, setUserDefaultAddress] = useState<any | null>(null);
   const [closestAddress, setClosestAddress] = useState<any | null>(null);
   const [currentDeliveryAddress, setCurrentDeliveryAddress] = useState<any | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const { user, signOut, isAuthenticated } = useAuth();
 
   // Warehouse location coordinates
@@ -239,6 +244,26 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleAddressSelect = (address: any) => {
+    setCurrentDeliveryAddress(address);
+    // Recalculate delivery info for the selected address
+    const distance = calculateDistance(WAREHOUSE_LOCATION, {
+      latitude: address.latitude,
+      longitude: address.longitude
+    });
+
+    const duration = calculateDeliveryDuration(distance);
+    const fee = calculateDeliveryFee(distance);
+
+    setDeliveryInfo({
+      distance: formatDistance(distance),
+      duration: formatDeliveryDuration(duration),
+      fee: fee,
+      storeName: 'veg7 Warehouse'
+    });
+  };
+
+
   const getCurrentLocation = async () => {
     setLocationLoading(true);
     setLocationError(null);
@@ -254,7 +279,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         accuracy: Location.Accuracy.High,
       });
 
-      const locationData: LocationType = {
+      const locationData: Location = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
@@ -271,32 +296,21 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const calculateDeliveryInfo = async (latitude: number, longitude: number) => {
     try {
-      // Load stores to calculate nearest store
-      const { data: storesData, error: storesError } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('is_active', true);
+      // Calculate distance from warehouse
+      const distance = calculateDistance(WAREHOUSE_LOCATION, {
+        latitude,
+        longitude
+      });
 
-      if (!storesError && storesData) {
-        const nearestStoreInfo = findNearestStore(
-          { latitude, longitude },
-          storesData.map(store => ({
-            name: store.name,
-            address: store.address,
-            latitude: store.latitude,
-            longitude: store.longitude,
-          }))
-        );
+      const duration = calculateDeliveryDuration(distance);
+      const fee = calculateDeliveryFee(distance);
 
-        if (nearestStoreInfo) {
-          setDeliveryInfo({
-            distance: formatDistance(nearestStoreInfo.distance),
-            duration: formatDeliveryDuration(nearestStoreInfo.duration),
-            fee: calculateDeliveryFee(nearestStoreInfo.distance),
-            storeName: nearestStoreInfo.store.name,
-          });
-        }
-      }
+      setDeliveryInfo({
+        distance: formatDistance(distance),
+        duration: formatDeliveryDuration(duration),
+        fee: fee,
+        storeName: 'veg7 Warehouse'
+      });
     } catch (error) {
       console.error('Error calculating delivery info:', error);
     }
@@ -390,8 +404,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const renderCategory = ({ item }: { item: Category }) => (
     <TouchableOpacity
       style={styles.categoryCard}
+      onPress={() => navigation.navigate('Products', { categoryId: item.id })}
     >
-      <Image source={{ uri: item.image_url }} style={styles.categoryImage} />
+      <Image
+        source={getRandomVegetableImage()}
+        style={styles.categoryImage}
+        resizeMode="cover"
+      />
       <Text style={styles.categoryName}>{item.name}</Text>
     </TouchableOpacity>
   );
@@ -401,7 +420,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.productCard}
       onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
     >
-      <Image source={{ uri: item.image_url }} style={styles.productImage} />
+      <Image
+        source={getRandomVegetableImage()}
+        style={styles.productImage}
+        resizeMode="cover"
+      />
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.productPrice}>₹{item.price}/{item.weight}{item.unit}</Text>
@@ -420,16 +443,37 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
+    <>
+      <StatusBar
+        backgroundColor="transparent"
+        barStyle="dark-content"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={{ paddingTop: 0 }}
+        >
         {/* Header */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <Image
+                source={require('../../../assets/veg7.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>veg7</Text>
+                <Text style={styles.subtitle}>Fresh Vegetables</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.headerBottom}>
             <Text style={styles.greeting}>
               Hello, {isAuthenticated ? (user?.full_name || 'User') : 'Guest'}
             </Text>
@@ -437,7 +481,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Delivery Information - Side by Side Display */}
             {isAuthenticated && deliveryInfo && (
-              <View style={styles.deliveryInfoContainer}>
+              <TouchableOpacity
+                style={styles.deliveryInfoContainer}
+                onPress={() => setShowAddressModal(true)}
+              >
                 <View style={styles.deliveryRow}>
                   <View style={styles.deliveryItem}>
                     <Text style={styles.deliveryIcon}>📍</Text>
@@ -456,7 +503,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
                   </View>
                 </View>
-              </View>
+                <Text style={styles.changeAddressText}>Tap to change address</Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -503,7 +551,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Shop by Category</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Categories')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -522,7 +570,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured Products</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Products')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -577,8 +625,17 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </ScrollView>
         </View>
 
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+
+        {/* Address Selection Modal */}
+        <AddressSelectionModal
+          visible={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onAddressSelect={handleAddressSelect}
+          currentAddress={currentDeliveryAddress}
+        />
+      </SafeAreaView>
+    </>
   );
 };
 
@@ -586,6 +643,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'ios' ? 50 : 44, // Add padding for status bar
   },
   loadingContainer: {
     flex: 1,
@@ -597,9 +655,56 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff',
+    marginBottom: 10,
+  },
+  headerTop: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    marginBottom: 15,
+    paddingTop: 8,
+    paddingBottom: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  headerBottom: {
+    paddingHorizontal: 20,
+    paddingTop: 5,
+    paddingBottom: 10,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  logo: {
+    width: 110,
+    height: 65,
+    marginRight: 15,
+    backgroundColor: 'transparent',
+  },
+  titleContainer: {
+    justifyContent: 'center',
+    flex: 1,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#2E7D32',
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#558B2F',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   headerContent: {
     flexDirection: 'row',
@@ -611,6 +716,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+    marginTop: 5,
   },
   subGreeting: {
     fontSize: 14,
@@ -767,7 +873,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4CAF50',
   },
-  deliveryInfo: {
+  deliveryInfoContainerOld: {
     backgroundColor: '#fff',
     marginHorizontal: 20,
     marginBottom: 20,
@@ -778,15 +884,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  deliveryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deliveryText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 5,
   },
   addAddressPrompt: {
     backgroundColor: '#fff',
@@ -1018,6 +1115,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#28a745',
     fontWeight: '700',
+  },
+  changeAddressText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  placeholderImage: {
+    backgroundColor: '#e8f5e8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 24,
   },
 });
 

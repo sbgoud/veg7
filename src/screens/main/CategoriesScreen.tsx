@@ -7,10 +7,13 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { getRandomVegetableImage } from '../../utils/imageUtils';
 
 type CategoriesScreenNavigationProp = any;
 
@@ -54,9 +57,17 @@ const CategoriesScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+
   const renderCategory = ({ item }: { item: Category }) => (
-    <TouchableOpacity style={styles.categoryCard}>
-      <Image source={{ uri: item.image_url }} style={styles.categoryImage} />
+    <TouchableOpacity
+      style={styles.categoryCard}
+      onPress={() => navigation.navigate('Products', { categoryId: item.id })}
+    >
+      <Image
+        source={getRandomVegetableImage()}
+        style={styles.categoryImage}
+        resizeMode="cover"
+      />
       <View style={styles.categoryInfo}>
         <Text style={styles.categoryName}>{item.name}</Text>
         <Text style={styles.categoryDescription} numberOfLines={2}>
@@ -77,11 +88,17 @@ const CategoriesScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Categories</Text>
-        <Text style={styles.subtitle}>Choose your favorite vegetable category</Text>
-      </View>
+    <>
+      <StatusBar
+        backgroundColor="transparent"
+        barStyle="dark-content"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Categories</Text>
+          <Text style={styles.subtitle}>Choose your favorite vegetable category</Text>
+        </View>
 
       <FlatList
         data={categories}
@@ -90,14 +107,16 @@ const CategoriesScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
-  );
+     </SafeAreaView>
+   </>
+ );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'ios' ? 50 : 44,
   },
   loadingContainer: {
     flex: 1,
@@ -154,6 +173,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  placeholderImage: {
+    backgroundColor: '#e8f5e8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 24,
   },
 });
 

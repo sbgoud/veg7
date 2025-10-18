@@ -1,9 +1,9 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { View, Text, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/services/auth/AuthContext';
 import HomeScreen from './src/screens/main/HomeScreen';
 import CategoriesScreen from './src/screens/main/CategoriesScreen';
@@ -22,6 +22,7 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
+  const { isAuthenticated } = useAuth();
 
   return (
     <Tab.Navigator
@@ -30,11 +31,16 @@ const MainTabNavigator = () => {
         tabBarInactiveTintColor: '#666',
         tabBarStyle: {
           backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          borderTopWidth: 2,
+          borderTopColor: '#4CAF50',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 65,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 8,
         },
       }}
     >
@@ -43,10 +49,14 @@ const MainTabNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🏠</Text>
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? "home" : "home-outline"}
+              size={size}
+              color={color}
+            />
           ),
-          headerTitle: 'veg7 - Fresh Vegetables',
+          headerShown: false,
         }}
       />
       <Tab.Screen
@@ -54,10 +64,14 @@ const MainTabNavigator = () => {
         component={CategoriesScreen}
         options={{
           tabBarLabel: 'Categories',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📂</Text>
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? "view-grid" : "view-grid-outline"}
+              size={size}
+              color={color}
+            />
           ),
-          headerTitle: 'Categories',
+          headerShown: false,
         }}
       />
       <Tab.Screen
@@ -65,45 +79,82 @@ const MainTabNavigator = () => {
         component={ProductsScreen}
         options={{
           tabBarLabel: 'Products',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🥬</Text>
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? "shopping" : "shopping-outline"}
+              size={size}
+              color={color}
+            />
           ),
-          headerTitle: 'All Products',
+          headerShown: false,
         }}
       />
-      <Tab.Screen
-        name="Cart"
-        component={CartScreen}
-        options={{
-          tabBarLabel: 'Cart',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🛒</Text>
-          ),
-          headerTitle: 'Shopping Cart',
-        }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={OrdersScreen}
-        options={{
-          tabBarLabel: 'Orders',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📦</Text>
-          ),
-          headerTitle: 'My Orders',
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>👤</Text>
-          ),
-          headerTitle: 'Profile',
-        }}
-      />
+      {isAuthenticated ? (
+        <Tab.Screen
+          name="Cart"
+          component={CartScreen}
+          options={{
+            tabBarLabel: 'Cart',
+            tabBarIcon: ({ color, size, focused }) => (
+              <MaterialCommunityIcons
+                name={focused ? "cart" : "cart-outline"}
+                size={size}
+                color={color}
+              />
+            ),
+            headerShown: false,
+          }}
+        />
+      ) : (
+        <Tab.Screen
+          name="AuthCart"
+          component={AuthScreen}
+          options={{
+            tabBarLabel: 'Sign In',
+            tabBarIcon: ({ color, size, focused }) => (
+              <MaterialCommunityIcons
+                name={focused ? "login" : "login"}
+                size={size}
+                color={color}
+              />
+            ),
+            headerShown: false,
+          }}
+        />
+      )}
+      {isAuthenticated ? (
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ color, size, focused }) => (
+              <MaterialCommunityIcons
+                name={focused ? "account" : "account-outline"}
+                size={size}
+                color={color}
+              />
+            ),
+            headerShown: false,
+          }}
+        />
+      ) : (
+        <Tab.Screen
+          name="AuthProfile"
+          component={AuthScreen}
+          options={{
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ color, size, focused }) => (
+              <MaterialCommunityIcons
+                name={focused ? "account" : "account-outline"}
+                size={size}
+                color={color}
+              />
+            ),
+            headerShown: false,
+          }}
+        />
+      )}
     </Tab.Navigator>
   );
 };
@@ -124,7 +175,7 @@ const AppContent = () => {
       {/* Main app with bottom tabs */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
 
-      {/* Product detail screen */}
+      {/* Modal screens for product details and auth */}
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
@@ -204,7 +255,7 @@ export default function App() {
   return (
     <AuthProvider>
       <NavigationContainer>
-        <StatusBar style="dark" />
+        <StatusBar style="dark" backgroundColor="transparent" />
         <AppContent />
       </NavigationContainer>
     </AuthProvider>

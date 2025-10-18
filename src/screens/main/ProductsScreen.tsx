@@ -9,12 +9,15 @@ import {
   Image,
   TextInput,
   RefreshControl,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { getRandomVegetableImage } from '../../utils/imageUtils';
 
-type ProductsScreenNavigationProp = any;
+type ProductsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Products'>;
 
 interface Product {
   id: string;
@@ -34,9 +37,10 @@ interface Category {
 
 interface Props {
   navigation: ProductsScreenNavigationProp;
+  route: any;
 }
 
-const ProductsScreen: React.FC<Props> = ({ navigation }) => {
+const ProductsScreen: React.FC<Props> = ({ navigation, route }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -46,8 +50,13 @@ const ProductsScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    // Check if categoryId is passed from navigation
+    const categoryId = route.params?.categoryId;
+    if (categoryId) {
+      setSelectedCategory(categoryId);
+    }
     loadData();
-  }, []);
+  }, [route.params]);
 
   useEffect(() => {
     filterProducts();
@@ -113,12 +122,17 @@ const ProductsScreen: React.FC<Props> = ({ navigation }) => {
     setRefreshing(false);
   };
 
+
   const renderProduct = ({ item }: { item: Product }) => (
     <TouchableOpacity
       style={styles.productCard}
       onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
     >
-      <Image source={{ uri: item.image_url }} style={styles.productImage} />
+      <Image
+        source={getRandomVegetableImage()}
+        style={styles.productImage}
+        resizeMode="cover"
+      />
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.productPrice}>₹{item.price}/{item.weight}{item.unit}</Text>
@@ -157,9 +171,15 @@ const ProductsScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
+    <>
+      <StatusBar
+        backgroundColor="transparent"
+        barStyle="dark-content"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.container}>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search products..."
@@ -192,7 +212,8 @@ const ProductsScreen: React.FC<Props> = ({ navigation }) => {
         }
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 };
 
@@ -200,6 +221,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'ios' ? 50 : 44,
   },
   loadingContainer: {
     flex: 1,

@@ -16,6 +16,8 @@ import { useAuth } from '../../services/auth/AuthContext';
 import { CartService } from '../../services/api/cartService';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import { getRandomVegetableImage } from '../../utils/imageUtils';
+import { MaterialIcons } from '@expo/vector-icons';
 
 type ProductDetailScreenNavigationProp = any;
 type ProductDetailScreenRouteProp = any;
@@ -82,6 +84,7 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       setIsLoading(false);
     }
   };
+
 
   const addToCart = async () => {
     if (!isAuthenticated || !user || !product) {
@@ -151,7 +154,11 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Product Image */}
-        <Image source={{ uri: product.image_url }} style={styles.productImage} />
+        <Image
+          source={getRandomVegetableImage()}
+          style={styles.productImage}
+          resizeMode="cover"
+        />
 
         {/* Product Info */}
         <View style={styles.content}>
@@ -256,7 +263,7 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <>
-                  <Text style={styles.addToCartIcon}>🛒</Text>
+                  <MaterialIcons name="add-shopping-cart" size={20} color="#fff" />
                   <Text style={styles.addToCartText}>Add to Cart</Text>
                 </>
               )}
@@ -266,7 +273,7 @@ const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               style={styles.goToCartButton}
               onPress={() => navigation.navigate('Cart')}
             >
-              <Text style={styles.goToCartIcon}>🛒</Text>
+              <MaterialIcons name="shopping-cart" size={20} color="#4CAF50" />
               <Text style={styles.goToCartText}>Go to Cart</Text>
             </TouchableOpacity>
           </View>
@@ -451,9 +458,14 @@ const styles = StyleSheet.create({
   bottomBar: {
     backgroundColor: '#fff',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    paddingVertical: 18,
+    borderTopWidth: 2,
+    borderTopColor: '#4CAF50',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -464,10 +476,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30,
     flex: 1,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   addToCartButtonDisabled: {
     opacity: 0.7,
@@ -488,10 +505,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30,
     flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   goToCartIcon: {
     fontSize: 18,

@@ -1,6 +1,4 @@
 import React from 'react';
-import { Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../services/auth/AuthContext';
 
@@ -32,23 +30,12 @@ export type RootStackParamList = {
   AuthModal: undefined;
 };
 
-export type MainTabParamList = {
-  Home: undefined;
-  Categories: undefined;
-  Products: undefined;
-  Cart: undefined;
-  Profile: undefined;
-  AuthCart: undefined;
-  AuthProfile: undefined;
-};
-
 const Stack = createStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Auth Navigator for handling Login and Signup screens
 const AuthNavigator: React.FC = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={AuthScreen} />
     </Stack.Navigator>
   );
@@ -57,123 +44,13 @@ const AuthNavigator: React.FC = () => {
 // Auth Stack Navigator for modal authentication
 const AuthStackNavigator: React.FC = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={AuthScreen} />
     </Stack.Navigator>
   );
 };
 
-const MainTabNavigator: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: '#666',
-        tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
-        },
-        headerStyle: {
-          backgroundColor: '#4CAF50',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🏠</Text>
-          ),
-          headerTitle: 'veg7 - Fresh Vegetables',
-        }}
-      />
-      <Tab.Screen
-        name="Categories"
-        component={CategoriesScreen}
-        options={{
-          tabBarLabel: 'Categories',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📂</Text>
-          ),
-          headerTitle: 'Categories',
-        }}
-      />
-      <Tab.Screen
-        name="Products"
-        component={ProductsScreen}
-        options={{
-          tabBarLabel: 'Products',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🥬</Text>
-          ),
-          headerTitle: 'All Products',
-        }}
-      />
-      {isAuthenticated ? (
-        <Tab.Screen
-          name="Cart"
-          component={CartScreen}
-          options={{
-            tabBarLabel: 'Cart',
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ fontSize: size, color }}>🛒</Text>
-            ),
-            headerTitle: 'Shopping Cart',
-          }}
-        />
-      ) : (
-        <Tab.Screen
-          name="AuthCart"
-          component={AuthNavigator}
-          options={{
-            tabBarLabel: 'Sign In',
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ fontSize: size, color }}>🔐</Text>
-            ),
-            headerShown: false,
-          }}
-        />
-      )}
-      {isAuthenticated ? (
-        <Tab.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            tabBarLabel: 'Profile',
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ fontSize: size, color }}>👤</Text>
-            ),
-            headerTitle: 'Profile',
-          }}
-        />
-      ) : (
-        <Tab.Screen
-          name="AuthProfile"
-          component={AuthNavigator}
-          options={{
-            tabBarLabel: 'Profile',
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ fontSize: size, color }}>👤</Text>
-            ),
-            headerShown: false,
-          }}
-        />
-      )}
-    </Tab.Navigator>
-  );
-};
+// Temporarily removed bottom tab navigator as requested
 
 const AppNavigator: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -183,24 +60,16 @@ const AppNavigator: React.FC = () => {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Main app with bottom tabs */}
-      <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
+      {/* Main app - just show HomeScreen directly for now */}
+      <Stack.Screen name="Home" component={HomeScreen} />
 
-      {/* Modal screens for product details and auth */}
-      <Stack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{
-          headerShown: true,
-          headerStyle: { backgroundColor: '#4CAF50' },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
-          title: 'Product Details',
-        }}
-      />
+      {/* Other screens accessible from HomeScreen */}
+      <Stack.Screen name="Categories" component={CategoriesScreen} />
+      <Stack.Screen name="Products" component={ProductsScreen} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
 
-      {/* Authentication modal - shows when users need to login/signup */}
+      {/* Authentication modal */}
       {!isAuthenticated && (
         <Stack.Screen
           name="AuthModal"
@@ -215,28 +84,10 @@ const AppNavigator: React.FC = () => {
       {/* Protected screens - only accessible when authenticated */}
       {isAuthenticated && (
         <>
-          <Stack.Screen
-            name="Checkout"
-            component={CheckoutScreen}
-            options={{
-              headerShown: true,
-              headerStyle: { backgroundColor: '#4CAF50' },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontWeight: 'bold' },
-              title: 'Checkout',
-            }}
-          />
-          <Stack.Screen
-            name="Orders"
-            component={OrdersScreen}
-            options={{
-              headerShown: true,
-              headerStyle: { backgroundColor: '#4CAF50' },
-              headerTintColor: '#fff',
-              headerTitleStyle: { fontWeight: 'bold' },
-              title: 'My Orders',
-            }}
-          />
+          <Stack.Screen name="Cart" component={CartScreen} />
+          <Stack.Screen name="Checkout" component={CheckoutScreen} />
+          <Stack.Screen name="Orders" component={OrdersScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
         </>
       )}
     </Stack.Navigator>

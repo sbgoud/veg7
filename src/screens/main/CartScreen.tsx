@@ -14,22 +14,8 @@ import { useAuth } from '../../services/auth/AuthContext';
 import { supabase } from '../../services/api/supabase';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
-interface CartItem {
-  id: string;
-  user_id: string;
-  product_id: string;
-  quantity: number;
-  products: {
-    id: string;
-    name: string;
-    price: number;
-    weight: number;
-    unit: string;
-    image_url: string;
-  };
-}
+type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
 
-type CartScreenNavigationProp = any;
 
 interface CartItem {
   id: string;
@@ -339,17 +325,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 30,
-  },
-  loginButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   shopButton: {
     backgroundColor: '#4CAF50',
