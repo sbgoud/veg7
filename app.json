@@ -4,11 +4,11 @@
     "slug": "veg7",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/veg7logo.svg",
+    "icon": "./assets/veg7.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/veg7logo.svg",
+      "image": "./assets/veg7.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,7 +18,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow veg7 to use your location for accurate delivery estimates and address selection."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "ios": {
       "supportsTablet": true,
@@ -29,8 +30,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/veg7logo.svg",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/veg7.png",
+        "backgroundColor": "#4CAF50"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -48,6 +49,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "75860edd-0737-4d56-a79f-04ad03f2da9d"
+      }
     }
   }
 }

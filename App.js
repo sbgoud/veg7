@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/services/auth/AuthContext';
 import HomeScreen from './src/screens/main/HomeScreen';
 import CategoriesScreen from './src/screens/main/CategoriesScreen';
@@ -23,6 +24,7 @@ const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
   const { isAuthenticated } = useAuth();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -33,9 +35,9 @@ const MainTabNavigator = () => {
           backgroundColor: '#fff',
           borderTopWidth: 2,
           borderTopColor: '#4CAF50',
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 65,
+          height: 65 + Math.max(insets.bottom, 8),
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
