@@ -4,11 +4,11 @@
     "slug": "veg7",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/veg7.png",
+    "icon": "./assets/square-image.jpg",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/veg7.png",
+      "image": "./assets/square-image.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -30,7 +30,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/veg7.png",
+        "foregroundImage": "./assets/square-image.jpg",
         "backgroundColor": "#4CAF50"
       },
       "edgeToEdgeEnabled": true,
